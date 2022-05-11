@@ -28,6 +28,29 @@ We have an *if* that searches if the iterator is in another day to calculate the
 # Divide and Conquer
 The Divide and Conquer mode has a depth value, that will determine the number of times that the array is going to divide in differents sub-lists.
 
+
+```c++
+void divide_and_conquer(unsigned begin, unsigned end, unsigned depth = 0) {
+    if ((end - begin > SampleSize)) {
+
+        const unsigned pivot = ((begin + end) / 2) % SampleSize != 0 ? ((begin + end) / 2) + (SampleSize/2) : (begin + end) / 2;
+
+        if (pivot < TotalData - SampleSize) {
+            if (depth > 0) { // PARALLEL
+                std::thread t1(divide_and_conquer, begin, pivot, depth - 1);
+                std::thread t2(divide_and_conquer, pivot, end, depth - 1);
+
+                t1.join();
+                t2.join();
+            } else { // SEQUENTIAL
+                std::thread t1(procedure, begin, end);
+                t1.join();
+            }
+        }
+    }
+}
+```
+
 The algorithm has a partition part that depends on the depth. Later, the threads create a new thread that executes the procedure function.
 
 ```c++
@@ -70,25 +93,40 @@ When executing the program you can specify the number of threads in the threadpo
 
 All tests were run on Linux OS.
 
-|        | Serial mode   | Divide & Conquer mode    | QThreadPool mode      |      VALUE     |
-| :----: | :-----------: | :----------------------: | :-------------------: | :------------: |
-| µs     | 12208960      | 12147838                 |           -           |    0(Serial)   |
-| µs     |      -        | 6123903                  | 12141932              |    1(Serial)   |
-| µs     |      -        | 3113816                  | 6132674               |        2       |
-| µs     |      -        | 2086753                  | 4098260               |        3       |
-| µs     |      -        | 1667251                  | 3093433               |        4       |
-| µs     |      -        | 1600163                  | 2495920               |        5       |
-| µs     |      -        | 1584571                  | 2122245               |        6       |
-| µs     |      -        |            -             | 1978396               |        7       |
-| µs     |      -        |            -             | 1874429               |        8       |
-| µs     |      -        |            -             | 1773957               |        9       |
-| µs     |      -        |            -             | 1691725               |       10       |
-| µs     |      -        |            -             | 1612826               |       11       |
-| µs     |      -        |            -             | 1593345               |       12       |
+- Sequential mode (without threads): 12208960 
 
-<font size="1"> In QThreadPool mode VALUE = maxThreadCount*</font> 
+|        | QThreadPool mode      |      Threads     |
+| :----: | :-------------------: | :--------------: |
+| µs     | 12141932              |    1(Serial)     |
+| µs     | 6132674               |        2         |
+| µs     | 4098260               |        3         |
+| µs     | 3093433               |        4         |
+| µs     | 2495920               |        5         |
+| µs     | 2122245               |        6         |
+| µs     | 1978396               |        7         |
+| µs     | 1874429               |        8         |
+| µs     | 1773957               |        9         |
+| µs     | 1691725               |       10         |
+| µs     | 1612826               |       11         |
+| µs     | 1593345               |       12         |
 
-<font size="1"> In Divide & Conquer mode VALUE = depth*</font> 
+
+|        | Divide & Conquer mode    |      Depth       |      Threads                           |
+| :----: | :----------------------: | :--------------: | :------------------------------------: |
+| µs     | 12147838                 |      0 (Serial)  |        1 + 1(executes procedure)       |
+| µs     | 6123903                  |      1           |        3 + 2(execute procedure)        |
+| µs     | 3113816                  |      2           |        7 + 4(execute procedure)        |
+| µs     | 2086753                  |      3           |        15 + 8(execute procedure)       |
+| µs     | 1667251                  |      4           |        31 + 16(execute procedure)      |
+| µs     | 1600163                  |      5           |        63 + 32(execute procedure)      |
+| µs     | 1584571                  |      6           |        127 + 64(execute procedure)     |
+
+
+As it can be observed in the tables above, when using the QThreadPool aproach to the problem, better times are taken. Leaving the OS to handle threads seems to be the best aproach as compared with divide and conquer which is at some point inefficient due to the excessive creation of threads. This happens because QThreadPool uses already created threads (if there are any) while being able to put a limit to the number of threads used and divide and conquer doesn't. Having in mind the amount of threads that this aproach needs, divide and conquer becomes increasingly inefficient. 
+
+During the tests, when setting the depth above 5 we started to notice the effect of creating too many threads, the programs lagged out and the entire system was affected by this. However in the thread pool aproach it never happened. 
+
+
 
 <font size="1"> After depth 6 too many threads are created making it hard to test.*</font>
 
