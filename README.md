@@ -65,7 +65,7 @@ void procedure(unsigned begin, unsigned end) {
 
 The procedure function travels the vector from beginning to end havinh each thread calculate the mean and the median of each day.
 
-# QThreadPool aproach
+# QThreadPool approach
 
 Using the same data as the other two methods explained earlier, we can calculate the mean and median using QThreadPool and QRunnable.
 
